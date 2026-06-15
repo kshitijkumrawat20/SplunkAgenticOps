@@ -1,7 +1,17 @@
 [project]
 name = "splunkagenticops"
 version = "0.1.0"
-description = "Add your description here"
+description = "OpsPilot AI: Autonomous Incident Investigation & Response Platform"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "langgraph>=0.0.26",
+    "langchain-google-genai>=1.0.0",
+    "mcp>=1.0.0",
+    "pydantic>=2.6.0",
+    "python-dotenv>=1.0.1",
+    "httpx>=0.26.0"
+]
+

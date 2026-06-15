@@ -114,6 +114,9 @@ async def verify_all():
                 # Check for Phase 4 keys
                 logger.info(f"Report Incident Type present: {'incident_type' in report_content}")
                 logger.info(f"Report Industry present: {'industry' in report_content}")
+                # Check for Phase 5 keys
+                logger.info(f"Report Investigation Plan present: {'investigation_plan' in report_content}")
+                logger.info(f"Report Domain Findings present: {'domain_findings' in report_content}")
                 # Check for Phase 2 keys
                 logger.info(f"Report Timeline keys present: {'timeline' in report_content}")
                 logger.info(f"Report Historical Context keys present: {'historical_context' in report_content}")

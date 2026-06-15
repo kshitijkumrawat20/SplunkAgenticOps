@@ -66,3 +66,16 @@ class ClassificationFinding(BaseModel):
     affected_domain: str = Field(description="Affected domain or component")
     confidence: float = Field(description="Confidence score in the classification (0.0 to 1.0)")
 
+class InvestigationPlan(BaseModel):
+    incident_type: str = Field(description="Incident type: database, cache, networking, deployment, infrastructure, application, security, unknown")
+    confidence: float = Field(description="Confidence score in the investigation plan (0.0 to 1.0)")
+    required_agents: List[str] = Field(description="List of agent IDs required to execute for this incident")
+    reasoning: str = Field(description="Reasoning behind the generated investigation plan")
+
+class DomainAgentFinding(BaseModel):
+    incident_type: str = Field(description="The domain of the agent (e.g. database, network, etc.)")
+    analysis: str = Field(description="Detailed analysis of logs and telemetry context")
+    discovered_issues: List[str] = Field(description="List of specific problems or anomalies discovered")
+    suggested_actions: List[str] = Field(description="Remediation actions recommended by this agent")
+    confidence: float = Field(description="Confidence level in the findings (0.0 to 1.0)")
+

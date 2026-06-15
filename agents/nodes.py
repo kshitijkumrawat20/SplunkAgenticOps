@@ -181,7 +181,10 @@ async def deployment_agent_node(state: IncidentState) -> Dict[str, Any]:
         )
     logger.info("Starting Deployment Agent...")
     log_findings = state.get("log_findings")
-    affected_services = log_findings.affected_services if log_findings else []
+    if isinstance(log_findings, dict):
+        affected_services = log_findings.get("affected_services") or []
+    else:
+        affected_services = getattr(log_findings, "affected_services", []) if log_findings else []
     
     # Read local deployment logs
     deploy_content = ""
@@ -224,8 +227,9 @@ async def deployment_agent_node(state: IncidentState) -> Dict[str, Any]:
 
 async def runbook_agent_node(state: IncidentState) -> Dict[str, Any]:
     """
-    Runbook Agent Node: Searches local runbooks/*.md for keywords,
-    retrieves proposed remediations.
+    Runbook Agent Node: Searches local runbooks recursively,
+    filters by plan category and dominant errors, ranks relevance,
+    and returns synthesized proposed remediations.
     """
     incident_id = state.get("incident_id")
     if incident_id:
@@ -234,35 +238,50 @@ async def runbook_agent_node(state: IncidentState) -> Dict[str, Any]:
             incident_id, 
             "runbook_agent", 
             "running",
-            message="Scanning local knowledge base and runbooks directory for matches..."
+            message="Scanning local playbooks and ranking relevance to dynamic plan context..."
         )
     logger.info("Starting Runbook Agent...")
     log_findings = state.get("log_findings")
-    dominant_errors = log_findings.dominant_errors if log_findings else []
+    if isinstance(log_findings, dict):
+        dominant_errors = log_findings.get("dominant_errors") or []
+    else:
+        dominant_errors = getattr(log_findings, "dominant_errors", []) if log_findings else []
     
-    # Search local runbook DB
+    plan = state.get("investigation_plan")
+    if isinstance(plan, dict):
+        category = plan.get("incident_type", "unknown")
+    else:
+        category = getattr(plan, "incident_type", "unknown") if plan else "unknown"
+    
+    # Search local runbook DB using errors and incident category
     remediations_raw = []
-    runbook_names = []
-    for err in dominant_errors:
-        matches = search_runbooks(err)
+    runbook_names = set()
+    
+    search_queries = list(dominant_errors) + [category]
+    for q in search_queries:
+        matches = search_runbooks(q)
         for m in matches:
-            runbook_names.append(m["runbook"])
-            remediations_raw.append(m["content"])
+            if m["runbook"] not in runbook_names:
+                runbook_names.add(m["runbook"])
+                remediations_raw.append(f"File: {m['runbook']}\nContent:\n{m['content']}")
             
     # Format runbook matches for LLM
-    runbook_data = "\n\n".join(remediations_raw) if remediations_raw else "No runbooks found for these errors."
+    runbook_data = "\n\n---\n\n".join(remediations_raw) if remediations_raw else "No runbooks found matching criteria."
 
     prompt = f"""
-    You are the Runbook Agent of OpsPilot AI. Retrieve possible fixes and remediations.
+    You are the Runbook Discovery and Relevance Agent of OpsPilot AI.
+    Your goal is to analyze the discovered runbook sections, rate their relevance to the current category '{category}' and errors, and compile the best fixes.
     
+    Incident Category: {category}
     Dominant errors found: {dominant_errors}
     
-    Matching Runbook Files/Content:
+    Matching Runbook Files and Content:
     {runbook_data}
     
-    Synthesize findings to:
-    1. List the matched runbooks.
-    2. Present proposed remediations and actionable steps in a clean list format.
+    Please synthesize the findings:
+    1. Filter out runbooks that are not relevant to the incident category and errors.
+    2. Rank the remaining ones and extract matching_runbooks.
+    3. Generate the final proposed_remediations list of actionable instructions.
     """
     
     findings = runbook_llm.invoke(prompt)
@@ -304,15 +323,30 @@ async def rca_agent_node(state: IncidentState) -> Dict[str, Any]:
 
     anomaly = state.get("anomaly_findings")
 
+    def get_val(obj, key, default=None):
+        if not obj:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    def serialize_finding(f):
+        if not f:
+            return 'None'
+        if hasattr(f, 'model_dump_json'):
+            return f.model_dump_json()
+        import json
+        return json.dumps(f, indent=2)
+
     anomaly_str = ""
     if anomaly:
         anomaly_str = f"""
         Anomaly Detection Findings:
-        Anomaly Detected: {anomaly.anomaly_detected}
-        Anomaly Type: {anomaly.anomaly_type}
-        Confidence: {anomaly.confidence}
-        Affected Service: {anomaly.affected_service}
-        Description: {anomaly.description}
+        Anomaly Detected: {get_val(anomaly, 'anomaly_detected', False)}
+        Anomaly Type: {get_val(anomaly, 'anomaly_type', 'none')}
+        Confidence: {get_val(anomaly, 'confidence', 0.0)}
+        Affected Service: {get_val(anomaly, 'affected_service', 'Unknown')}
+        Description: {get_val(anomaly, 'description', '')}
         """
 
     historical_str = ""
@@ -328,18 +362,18 @@ async def rca_agent_node(state: IncidentState) -> Dict[str, Any]:
     You are the Root Cause Analysis (RCA) Agent of OpsPilot AI. Combine all agent findings and form a hypothesis.
     
     Log Findings:
-    {log.model_dump_json() if log else 'None'}
+    {serialize_finding(log)}
     
     Metrics Findings:
-    {metrics.model_dump_json() if metrics else 'None'}
+    {serialize_finding(metrics)}
     
     {anomaly_str}
     
     Deployment Findings:
-    {deploy.model_dump_json() if deploy else 'None'}
+    {serialize_finding(deploy)}
     
     Runbook Findings:
-    {runbook.model_dump_json() if runbook else 'None'}
+    {serialize_finding(runbook)}
     
     {historical_str}
     
@@ -392,14 +426,22 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
     rca = state.get("rca_findings")
     runbook = state.get("runbook_findings")
 
+    def serialize_finding(f):
+        if not f:
+            return 'None'
+        if hasattr(f, 'model_dump_json'):
+            return f.model_dump_json()
+        import json
+        return json.dumps(f, indent=2)
+
     prompt = f"""
     You are the Response Agent of OpsPilot AI. Generate remediation recommendations and an executive summary.
     
     Root Cause Analysis:
-    {rca.model_dump_json() if rca else 'None'}
+    {serialize_finding(rca)}
     
     Runbook Remediations:
-    {runbook.model_dump_json() if runbook else 'None'}
+    {serialize_finding(runbook)}
     
     Extract and generate:
     1. Step-by-step remediation steps (actual commands or processes).
@@ -445,10 +487,22 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
         approved = approval_status.get("approved", False)
     
     classification = state.get("classification_findings")
-    incident_type = classification.incident_type if classification else "unknown"
+    if isinstance(classification, dict):
+        incident_type = classification.get("incident_type", "unknown")
+    else:
+        incident_type = getattr(classification, "incident_type", "unknown") if classification else "unknown"
+        
     from config.environment import get_active_profile
     active_profile = get_active_profile()
     industry = active_profile.environment_type
+
+    plan = state.get("investigation_plan")
+    plan_dict = plan.model_dump() if plan and hasattr(plan, "model_dump") else plan
+    
+    domain_finds = state.get("domain_findings") or {}
+    domain_finds_serialized = {}
+    for k, v in domain_finds.items():
+        domain_finds_serialized[k] = v.model_dump() if hasattr(v, "model_dump") else v
 
     save_incident({
         "incident_id": incident_id,
@@ -456,6 +510,8 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
         "affected_service": affected_service,
         "incident_type": incident_type,
         "industry": industry,
+        "investigation_plan": plan_dict,
+        "domain_findings": domain_finds_serialized,
         "remediation": remediation_steps,
         "success": approved,
         "approved": approved,
@@ -463,6 +519,13 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
     
+    def get_val(obj, key, default=None):
+        if not obj:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
     # Compile the final incident report JSON
     report = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -470,29 +533,31 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
         "executive_summary": briefing,
         "incident_type": incident_type,
         "industry": industry,
+        "investigation_plan": plan_dict,
+        "domain_findings": domain_finds_serialized,
         "logs": {
             "query": state.get("error_query"),
-            "dominant_errors": state.get("log_findings").dominant_errors if state.get("log_findings") else [],
-            "affected_services": state.get("log_findings").affected_services if state.get("log_findings") else []
+            "dominant_errors": get_val(state.get("log_findings"), 'dominant_errors', []),
+            "affected_services": get_val(state.get("log_findings"), 'affected_services', [])
         },
         "metrics": {
-            "error_count": state.get("metrics_findings").error_count if state.get("metrics_findings") else 0,
-            "spike_detected": state.get("metrics_findings").spike_detected if state.get("metrics_findings") else False,
-            "severity_score": state.get("metrics_findings").severity_score if state.get("metrics_findings") else 1
+            "error_count": get_val(state.get("metrics_findings"), 'error_count', 0),
+            "spike_detected": get_val(state.get("metrics_findings"), 'spike_detected', False),
+            "severity_score": get_val(state.get("metrics_findings"), 'severity_score', 1)
         },
         "anomaly": {
-            "anomaly_detected": state.get("anomaly_findings").anomaly_detected if state.get("anomaly_findings") else False,
-            "anomaly_type": state.get("anomaly_findings").anomaly_type if state.get("anomaly_findings") else "none",
-            "confidence": state.get("anomaly_findings").confidence if state.get("anomaly_findings") else 0.0,
-            "affected_service": state.get("anomaly_findings").affected_service if state.get("anomaly_findings") else "Unknown",
-            "description": state.get("anomaly_findings").description if state.get("anomaly_findings") else "No anomaly findings"
+            "anomaly_detected": get_val(state.get("anomaly_findings"), 'anomaly_detected', False),
+            "anomaly_type": get_val(state.get("anomaly_findings"), 'anomaly_type', 'none'),
+            "confidence": get_val(state.get("anomaly_findings"), 'confidence', 0.0),
+            "affected_service": get_val(state.get("anomaly_findings"), 'affected_service', 'Unknown'),
+            "description": get_val(state.get("anomaly_findings"), 'description', 'No anomaly findings')
         },
         "deployments": {
-            "correlated": state.get("deployment_findings").deployments_correlated if state.get("deployment_findings") else [],
-            "suspicious": state.get("deployment_findings").is_suspicious_change if state.get("deployment_findings") else False
+            "correlated": get_val(state.get("deployment_findings"), 'deployments_correlated', []),
+            "suspicious": get_val(state.get("deployment_findings"), 'is_suspicious_change', False)
         },
         "runbooks": {
-            "matched": state.get("runbook_findings").matching_runbooks if state.get("runbook_findings") else []
+            "matched": get_val(state.get("runbook_findings"), 'matching_runbooks', [])
         },
         "root_cause_analysis": {
             "hypothesis": briefing,  # Executive summary briefing as main description

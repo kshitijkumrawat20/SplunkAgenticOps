@@ -166,8 +166,11 @@ async def anomaly_agent_node(state: IncidentState) -> Dict[str, Any]:
         logger.error(f"Failed to run anomaly detection: {e}")
         # Fallback anomaly finding
         fallback_service = "unknown"
-        if log and hasattr(log, "affected_services") and log.affected_services:
-            fallback_service = log.affected_services[0]
+        if log:
+            if isinstance(log, dict) and log.get("affected_services"):
+                fallback_service = log["affected_services"][0]
+            elif hasattr(log, "affected_services") and log.affected_services:
+                fallback_service = log.affected_services[0]
         else:
             from config.environment import get_active_profile
             prof = get_active_profile()

@@ -145,5 +145,167 @@
     "approved": true,
     "executive_summary": "Customers are likely experiencing difficulties completing orders and transactions due to an issue with a core service. Our core database is experiencing significant performance degradation, likely caused by a sudden surge in activity or inefficient data processing. We have 92% confidence in this assessment. To address this, we recommend increasing the capacity of our database system by adding more read replicas to distribute the load and alleviate pressure.",
     "timestamp": "2026-06-15T15:06:15.115249Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-153641",
+    "root_cause": "The Database Service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in write volume, resulting in a cascade of Database Timeout errors.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "investigation_plan": {
+      "incident_type": "database",
+      "confidence": 0.95,
+      "required_agents": [
+        "log_agent",
+        "metrics_agent",
+        "anomaly_agent",
+        "deployment_agent",
+        "database_agent",
+        "runbook_agent",
+        "timeline_agent",
+        "memory_agent"
+      ],
+      "reasoning": "The alert name 'E-Commerce Database Outage' directly indicates a database incident. The 'database' incident type is selected as it precisely matches the alert. The 'log_agent' is required to analyze logs for errors, as suggested by the search query. The 'metrics_agent' will monitor database performance and resource utilization. The 'anomaly_agent' will help detect unusual patterns. The 'deployment_agent' can check for recent changes that might have impacted the database. The 'database_agent' is critical for direct database health checks and status. The 'runbook_agent' will provide standard operating procedures for database outages. The 'timeline_agent' will help correlate events leading to the outage, and the 'memory_agent' can investigate potential memory-related issues on the database server."
+    },
+    "domain_findings": {
+      "database_agent": {
+        "incident_type": "database",
+        "analysis": "The logs indicate a high frequency of 'Database Timeout' errors occurring consistently over a short period. This suggests a persistent issue with the database's ability to respond to requests within the configured timeout limit. Potential causes include database server overload, inefficient queries, connection pool exhaustion, or network latency. The pattern of errors points to a systemic performance bottleneck rather than transient network glitches.",
+        "discovered_issues": [
+          "Frequent and recurring database timeouts",
+          "Potential database performance degradation or resource contention",
+          "Possible inefficient query execution or connection pool issues"
+        ],
+        "suggested_actions": [
+          "Review database server metrics (CPU, memory, disk I/O, network utilization) to identify resource bottlenecks.",
+          "Analyze slow query logs to identify and optimize inefficient queries, potentially by adding or optimizing indexes.",
+          "Examine database connection pool configuration and current usage to ensure it's adequately sized and not being exhausted.",
+          "Investigate for potential deadlocks or long-running transactions that could be blocking other operations.",
+          "Consider scaling database resources (e.g., adding more replicas, increasing server capacity) if resource contention is confirmed after initial analysis."
+        ],
+        "confidence": 0.95
+      }
+    },
+    "remediation": [
+      "Analyze the database slow query log to identify the specific queries causing the timeouts (e.g., run 'SHOW FULL PROCESSLIST;' or check cloud monitoring tools).",
+      "Verify if indexes are applied on frequently searched fields such as 'order_id' and 'user_id', and apply them if missing (e.g., 'CREATE INDEX idx_order_id ON orders (order_id);').",
+      "Check database CPU, memory, and connection pool utilization to confirm resource exhaustion levels.",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic from the primary database instance.",
+      "Monitor the application error rates to ensure 'Database Timeout' errors subside after indexing or scaling."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our core Database Service is currently experiencing significant performance issues, potentially causing customers to face delays or failures when completing transactions and placing orders. This degradation is likely due to a heavy load from inefficient data requests or a sudden increase in activity. To alleviate the strain and restore performance, we recommend increasing the capacity of our database by adding more read replicas. We have 92% confidence that this action will resolve the issue and restore normal operations.",
+    "timestamp": "2026-06-15T15:38:45.762866Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-153949",
+    "root_cause": "The Database Service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in write volume, resulting in a cascade of Database Timeout errors.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "investigation_plan": {
+      "incident_type": "database",
+      "confidence": 0.95,
+      "required_agents": [
+        "log_agent",
+        "metrics_agent",
+        "anomaly_agent",
+        "deployment_agent",
+        "database_agent",
+        "runbook_agent",
+        "timeline_agent",
+        "memory_agent"
+      ],
+      "reasoning": "The alert name 'E-Commerce Database Outage' directly indicates a database incident. The environment profile also lists 'database' as a critical component and an error category, reinforcing this classification. The selected agents are crucial for a comprehensive database investigation: 'log_agent' for error analysis, 'metrics_agent' for performance monitoring, 'anomaly_agent' for detecting unusual patterns, 'deployment_agent' to check for recent changes, 'database_agent' for specific database health and status, 'runbook_agent' for executing recovery procedures, 'timeline_agent' for event correlation, and 'memory_agent' to assess resource utilization on database hosts. The objective is to diagnose the root cause of the database outage, understand its impact, and guide recovery efforts."
+    },
+    "domain_findings": {
+      "database_agent": {
+        "incident_type": "database",
+        "analysis": "The provided logs show a consistent and frequent occurrence of 'ERROR Database Timeout' messages, spanning from 23:36:38 to 23:37:13. This pattern indicates a persistent issue where the database is failing to respond to requests within the configured timeout period. The high frequency suggests a systemic problem rather than an intermittent glitch, likely pointing to performance bottlenecks, resource exhaustion, or inefficient query execution within the database system.",
+        "discovered_issues": [
+          "Frequent and recurring database timeouts across multiple requests.",
+          "Potential database performance degradation or overload.",
+          "Possible resource contention (CPU, memory, I/O) on the database server.",
+          "Likely presence of long-running or inefficient database queries.",
+          "Potential exhaustion of database connection limits."
+        ],
+        "suggested_actions": [
+          "Examine database server metrics (CPU, memory, disk I/O, network throughput) for signs of resource saturation during the reported times.",
+          "Analyze database slow query logs to identify and optimize any inefficient or long-running queries.",
+          "Review the database connection pool configuration and current active connections to ensure limits are not being hit.",
+          "Consider adding or optimizing indexes on frequently queried tables to improve query performance.",
+          "If resource saturation is confirmed, explore scaling options for the database instance (e.g., vertical scaling, adding read replicas).",
+          "Investigate network latency between the application and the database server."
+        ],
+        "confidence": 0.95
+      }
+    },
+    "remediation": [
+      "Analyze the database slow query log to identify the specific queries causing the timeouts (e.g., run 'SHOW FULL PROCESSLIST;' or check cloud monitoring tools).",
+      "Verify if indexes are applied on frequently searched fields such as 'order_id' and 'user_id', and apply them if missing (e.g., 'CREATE INDEX idx_order_id ON orders (order_id);').",
+      "Check database CPU, memory, and connection pool utilization to confirm resource exhaustion levels.",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic from the primary database instance.",
+      "Monitor the application error rates to ensure 'Database Timeout' errors subside after indexing or scaling."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our customers are currently unable to complete transactions, impacting sales, due to critical performance issues with our core Database Service. The system is experiencing a high volume of database timeouts, indicating severe degradation likely caused by inefficient data processing or an unexpected surge in activity. We recommend immediately scaling up our database capacity by adding more read replicas to alleviate this load. We have 92% confidence that this action will quickly restore full service and prevent further disruption to customer transactions.",
+    "timestamp": "2026-06-15T15:42:05.365059Z"
+  },
+  {
+    "incident_id": "manual-incident-1781539080204",
+    "root_cause": "The Database Service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in write volume, resulting in a cascade of Database Timeout errors.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "investigation_plan": {
+      "incident_type": "database",
+      "confidence": 0.95,
+      "required_agents": [
+        "log_agent",
+        "metrics_agent",
+        "anomaly_agent",
+        "deployment_agent",
+        "database_agent",
+        "runbook_agent",
+        "timeline_agent",
+        "memory_agent"
+      ],
+      "reasoning": "The alert name 'Database Outage Alert' directly indicates a database incident. The environment profile also lists 'database' as a critical component and an error category, reinforcing this classification. The selected agents are crucial for a comprehensive database investigation: 'log_agent' for error analysis, 'metrics_agent' for performance monitoring, 'anomaly_agent' for detecting unusual patterns, 'deployment_agent' to check for recent changes, 'database_agent' for specific database health and status, 'runbook_agent' for automated remediation, 'timeline_agent' for event correlation, and 'memory_agent' to assess resource utilization impacting the database."
+    },
+    "domain_findings": {
+      "database_agent": {
+        "incident_type": "database",
+        "analysis": "The provided logs show a consistent and frequent occurrence of 'ERROR Database Timeout' messages, spanning from 23:36:38 to 23:37:13. This pattern indicates a persistent issue where the database is failing to respond to requests within the configured timeout period. The high frequency suggests a systemic problem rather than an intermittent glitch, likely pointing to performance bottlenecks, resource exhaustion, or inefficient query execution within the database system.",
+        "discovered_issues": [
+          "Frequent and recurring database timeouts across multiple requests.",
+          "Potential database performance degradation or overload.",
+          "Possible resource contention (CPU, memory, I/O) on the database server.",
+          "Likely presence of long-running or inefficient database queries.",
+          "Potential exhaustion of database connection limits."
+        ],
+        "suggested_actions": [
+          "Examine database server metrics (CPU, memory, disk I/O, network throughput) for signs of resource saturation during the reported times.",
+          "Analyze database slow query logs to identify and optimize any inefficient or long-running queries.",
+          "Review the database connection pool configuration and current active connections to ensure limits are not being hit.",
+          "Consider adding or optimizing indexes on frequently queried tables to improve query performance.",
+          "If resource saturation is confirmed, explore scaling options for the database instance (e.g., vertical scaling, adding read replicas).",
+          "Investigate network latency between the application and the database server."
+        ],
+        "confidence": 0.95
+      }
+    },
+    "remediation": [
+      "Analyze the database slow query log to identify the specific queries causing the timeouts (e.g., run 'SHOW FULL PROCESSLIST;' or check cloud monitoring tools).",
+      "Verify if indexes are applied on frequently searched fields such as 'order_id' and 'user_id', and apply them if missing (e.g., 'CREATE INDEX idx_order_id ON orders (order_id);').",
+      "Check database CPU, memory, and connection pool utilization to confirm resource exhaustion levels.",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic from the primary database instance.",
+      "Monitor the application error rates to ensure 'Database Timeout' errors subside after indexing or scaling."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our customers are currently unable to complete transactions, impacting sales, due to critical performance issues with our core Database Service. The system is experiencing a high volume of database timeouts, indicating severe degradation likely caused by inefficient data processing or an unexpected surge in activity. We recommend immediately scaling up our database capacity by adding more read replicas to alleviate this load. We have 92% confidence that this action will quickly restore full service and prevent further disruption to customer transactions.",
+    "timestamp": "2026-06-15T16:00:42.573001Z"
   }
 ]

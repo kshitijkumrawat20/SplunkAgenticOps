@@ -39,7 +39,10 @@ async def memory_agent_node(state: IncidentState) -> Dict[str, Any]:
             
     # Retrieve incident classification and industry type
     classification = state.get("classification_findings")
-    incident_type = classification.incident_type if classification else "unknown"
+    if isinstance(classification, dict):
+        incident_type = classification.get("incident_type", "unknown")
+    else:
+        incident_type = getattr(classification, "incident_type", "unknown") if classification else "unknown"
     from config.environment import get_active_profile
     active_profile = get_active_profile()
     industry = active_profile.environment_type

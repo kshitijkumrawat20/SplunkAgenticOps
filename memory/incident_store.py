@@ -46,36 +46,34 @@ def save_incident(incident: Dict[str, Any]):
 
 def load_similar_incidents(service_name: str, error_types: List[str], incident_type: Optional[str] = None, industry: Optional[str] = None, limit: int = 3) -> Dict[str, Any]:
     """
-    Loads historical incidents that match the service_name, error_types, incident_type, industry, or root cause keywords,
-    and returns aggregated context.
+    Loads historical incidents that match the category, error signature,
+    and root cause keywords rather than specific service names, and returns aggregated context.
     """
     store = _load_store()
     matches = []
     
     for incident in store:
         score = 0
-        incident_service = incident.get("affected_service", "").lower()
         incident_rc = incident.get("root_cause", "").lower()
         incident_industry = incident.get("industry", "").lower()
         incident_type_val = incident.get("incident_type", "").lower()
+        incident_service = incident.get("affected_service", "").lower()
         
-        # Match industry profile
-        if industry and incident_industry == industry.lower():
-            score += 4
-            
-        # Match incident type category
+        # 1. Match category (incident_type)
         if incident_type and incident_type_val == incident_type.lower():
-            score += 3
-
-        # Match service name
-        if service_name and service_name.lower() in incident_service:
-            score += 2
+            score += 5
             
-        # Match error types
+        # 2. Match industry
+        if industry and incident_industry == industry.lower():
+            score += 3
+            
+        # 3. Match error signature keywords inside root cause or service type
         for err in error_types:
             err_lower = err.lower()
-            if err_lower in incident_rc or err_lower in incident_service:
-                score += 1
+            if err_lower in incident_rc:
+                score += 4  # Direct root cause signature match
+            elif err_lower in incident_service:
+                score += 1  # Lower weight on service name match
                 
         if score > 0:
             matches.append((score, incident))

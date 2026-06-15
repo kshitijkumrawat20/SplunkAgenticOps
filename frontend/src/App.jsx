@@ -3,23 +3,40 @@ import {
   Activity, CheckCircle2, AlertTriangle, Clock, History, Cpu, ShieldAlert, Check, X, Play, RefreshCw, Layers
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8000";
-const WS_BASE_URL = "ws://localhost:8000";
+const API_BASE_URL = "http://localhost:8020";
+const WS_BASE_URL = "ws://localhost:8020";
 
-const AGENT_ORDER = [
-  { id: "classification_agent", label: "Classification" },
-  { id: "log_agent", label: "Log Agent" },
-  { id: "metrics_agent", label: "Metrics Agent" },
-  { id: "anomaly_agent", label: "Anomaly Agent" },
-  { id: "deployment_agent", label: "Deployment Agent" },
-  { id: "runbook_agent", label: "Runbook Agent" },
-  { id: "timeline_agent", label: "Timeline Agent" },
-  { id: "memory_agent", label: "Memory Agent" },
-  { id: "rca_agent", label: "RCA Agent" },
-  { id: "remediation_agent", label: "Remediation Agent" },
-  { id: "approval_node", label: "Approval Node" },
-  { id: "response_agent", label: "Response Agent" }
-];
+const getDynamicAgentOrder = (liveAgentProgress, incidentDetails) => {
+  const plan = liveAgentProgress?.planner_agent?.data || incidentDetails?.findings?.investigation_plan || incidentDetails?.investigation_plan;
+  if (plan && plan.required_agents) {
+    const order = [
+      { id: "planner_agent", label: "Planner Agent" }
+    ];
+    plan.required_agents.forEach(agentId => {
+      let label = agentId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      order.push({ id: agentId, label: label });
+    });
+    order.push({ id: "rca_agent", label: "RCA Agent" });
+    order.push({ id: "remediation_agent", label: "Remediation Agent" });
+    order.push({ id: "approval_node", label: "Approval Node" });
+    order.push({ id: "response_agent", label: "Response Agent" });
+    return order;
+  }
+  
+  // Fallback if no plan is available
+  return [
+    { id: "planner_agent", label: "Planner Agent" },
+    { id: "log_agent", label: "Log Agent" },
+    { id: "metrics_agent", label: "Metrics Agent" },
+    { id: "anomaly_agent", label: "Anomaly Agent" },
+    { id: "deployment_agent", label: "Deployment Agent" },
+    { id: "runbook_agent", label: "Runbook Agent" },
+    { id: "rca_agent", label: "RCA Agent" },
+    { id: "remediation_agent", label: "Remediation Agent" },
+    { id: "approval_node", label: "Approval Node" },
+    { id: "response_agent", label: "Response Agent" }
+  ];
+};
 
 function App() {
   const [incidents, setIncidents] = useState([]);
@@ -434,7 +451,7 @@ function App() {
               Live Agent Execution Steps
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
-              {AGENT_ORDER.map((agent) => {
+              {getDynamicAgentOrder(liveAgentProgress, incidentDetails).map((agent) => {
                 const agentData = liveAgentProgress[agent.id];
                 const status = typeof agentData === "object" ? agentData.status : (agentData || "pending");
                 return (
@@ -456,8 +473,9 @@ function App() {
 
             {/* Active Agent Thought Stream */}
             {(() => {
-              const runningAgent = AGENT_ORDER.find(a => liveAgentProgress[a.id]?.status === "running");
-              const lastAgent = runningAgent || [...AGENT_ORDER].reverse().find(a => liveAgentProgress[a.id]?.status === "completed");
+              const currentOrder = getDynamicAgentOrder(liveAgentProgress, incidentDetails);
+              const runningAgent = currentOrder.find(a => liveAgentProgress[a.id]?.status === "running");
+              const lastAgent = runningAgent || [...currentOrder].reverse().find(a => liveAgentProgress[a.id]?.status === "completed");
               
               if (!lastAgent || !liveAgentProgress[lastAgent.id]) return null;
               
@@ -512,7 +530,7 @@ function App() {
                 <div className="text-slate-600 italic py-12 text-center">Observability stream idle. Trigger an investigation to stream live telemetry.</div>
               ) : (
                 <div className="space-y-2.5 pt-2">
-                  {AGENT_ORDER.map(agent => {
+                  {getDynamicAgentOrder(liveAgentProgress, incidentDetails).map(agent => {
                     const data = liveAgentProgress[agent.id];
                     if (!data) return null;
                     const isRunning = data.status === "running";
@@ -609,6 +627,86 @@ function App() {
                   </div>
                 </div>
               )}
+
+              {/* Dynamic Investigation Plan */}
+              {(() => {
+                const plan = incidentDetails?.findings?.investigation_plan || incidentDetails?.investigation_plan || liveAgentProgress.planner_agent?.data;
+                if (!plan) return null;
+                return (
+                  <div className="col-span-12 bg-slate-900/50 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
+                    <h3 className="font-bold text-slate-200 mb-3 flex items-center gap-2">
+                      <Cpu className="w-5 h-5 text-indigo-400" />
+                      Dynamic Investigation Plan
+                    </h3>
+                    <div className="bg-indigo-950/10 border border-indigo-500/20 rounded-xl p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Detected Incident Type:</span>
+                          <span className="text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2.5 py-0.5 rounded uppercase">
+                            {plan.incident_type}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          Confidence: <strong className="text-emerald-400">{((plan.confidence || 0) * 100).toFixed(0)}%</strong>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Selected Agent Chain:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {plan.required_agents?.map((agentId, idx) => (
+                            <span key={idx} className="text-xs bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded font-semibold font-mono">
+                              {agentId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2.5 border-t border-slate-800/60">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Planner Reasoning:</span>
+                        <p className="text-sm text-slate-300 font-medium italic">"{plan.reasoning}"</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Domain Agent Specific Findings */}
+              {incidentDetails?.findings?.domain_findings && Object.keys(incidentDetails.findings.domain_findings).map((agentKey) => {
+                const findings = incidentDetails.findings.domain_findings[agentKey];
+                if (!findings) return null;
+                let label = agentKey.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+                return (
+                  <div key={agentKey} className="col-span-12 bg-slate-900/50 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
+                    <h3 className="font-bold text-slate-200 mb-3 flex items-center gap-2">
+                      <Cpu className="w-5 h-5 text-indigo-400" />
+                      {label} Diagnostics
+                    </h3>
+                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-3">
+                      <p className="text-sm text-slate-300 leading-relaxed font-medium">{findings.analysis}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-800/60">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Discovered Issues</span>
+                          <ul className="list-disc list-inside text-xs text-rose-400 space-y-1.5 font-medium">
+                            {findings.discovered_issues?.map((issue, idx) => (
+                              <li key={idx}>{issue}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Suggested Remediation Actions</span>
+                          <ul className="list-disc list-inside text-xs text-indigo-300 space-y-1.5 font-medium">
+                            {findings.suggested_actions?.map((action, idx) => (
+                              <li key={idx}>{action}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* Panel 3: Root Cause Analysis */}
               <div className="col-span-12 md:col-span-6 bg-slate-900/50 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm flex flex-col">

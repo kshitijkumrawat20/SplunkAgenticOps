@@ -24,6 +24,10 @@ def dump_finding(val: Any) -> Any:
         return val.model_dump()
     if hasattr(val, "dict"):
         return val.dict()
+    if isinstance(val, dict):
+        return {k: dump_finding(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [dump_finding(v) for v in val]
     return val
 
 app = FastAPI(
@@ -141,7 +145,18 @@ async def run_investigation(req: InvestigationRequest):
                 "status": "pending_approval",
                 "incident_id": incident_id,
                 "timestamp": datetime.utcnow().isoformat() + "Z",
-                "remediation_proposal": dump_finding(state.values.get("remediation_proposal"))
+                "remediation_proposal": dump_finding(state.values.get("remediation_proposal")),
+                "findings": {
+                    "investigation_plan": dump_finding(state.values.get("investigation_plan")),
+                    "domain_findings": dump_finding(state.values.get("domain_findings")),
+                    "classification_findings": dump_finding(state.values.get("classification_findings")),
+                    "log_findings": dump_finding(state.values.get("log_findings")),
+                    "metrics_findings": dump_finding(state.values.get("metrics_findings")),
+                    "anomaly_findings": dump_finding(state.values.get("anomaly_findings")),
+                    "deployment_findings": dump_finding(state.values.get("deployment_findings")),
+                    "runbook_findings": dump_finding(state.values.get("runbook_findings")),
+                    "rca_findings": dump_finding(state.values.get("rca_findings"))
+                }
             }
             
         # If execution ran to the end without breakpoint (fallback)
@@ -150,6 +165,8 @@ async def run_investigation(req: InvestigationRequest):
             "incident_id": incident_id,
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "findings": {
+                "investigation_plan": dump_finding(state.values.get("investigation_plan")),
+                "domain_findings": dump_finding(state.values.get("domain_findings")),
                 "classification_findings": dump_finding(state.values.get("classification_findings")),
                 "log_findings": dump_finding(state.values.get("log_findings")),
                 "metrics_findings": dump_finding(state.values.get("metrics_findings")),
@@ -203,6 +220,8 @@ async def approve_remediation(req: ApprovalRequest):
             "incident_id": req.incident_id,
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "findings": {
+                "investigation_plan": dump_finding(final_state.get("investigation_plan")),
+                "domain_findings": dump_finding(final_state.get("domain_findings")),
                 "classification_findings": dump_finding(final_state.get("classification_findings")),
                 "log_findings": dump_finding(final_state.get("log_findings")),
                 "metrics_findings": dump_finding(final_state.get("metrics_findings")),

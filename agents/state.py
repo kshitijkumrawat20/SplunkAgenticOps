@@ -10,7 +10,9 @@ from .models import (
     HistoricalContext,
     TimelineEvent,
     AnomalyFinding,
-    ClassificationFinding
+    ClassificationFinding,
+    InvestigationPlan,
+    DomainAgentFinding
 )
 
 class IncidentState(TypedDict):
@@ -32,6 +34,8 @@ class IncidentState(TypedDict):
     rca_findings: Optional[RCAFinding]
     response_findings: Optional[ResponseFinding]
     classification_findings: Optional[ClassificationFinding]
+    investigation_plan: Optional[InvestigationPlan]
+    domain_findings: Optional[Dict[str, DomainAgentFinding]]
     
     # Execution workflow tracking
     supervisor_next: Optional[str]

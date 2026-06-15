@@ -1,0 +1,83 @@
+{
+  "database": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "deployment_agent",
+    "database_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "cache": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "application_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "networking": [
+    "log_agent",
+    "network_agent",
+    "metrics_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "deployment": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "deployment_agent",
+    "application_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "infrastructure": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "infrastructure_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "kubernetes": [
+    "log_agent",
+    "kubernetes_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "deployment_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "security": [
+    "log_agent",
+    "security_agent",
+    "network_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "application": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "application_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ],
+  "unknown": [
+    "log_agent",
+    "metrics_agent",
+    "anomaly_agent",
+    "runbook_agent",
+    "timeline_agent",
+    "memory_agent"
+  ]
+}

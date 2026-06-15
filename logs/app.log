@@ -8247,3 +8247,8 @@
 2026-06-15 21:32:30.943916 INFO auth-service User Login
 2026-06-15 21:32:31.983281 INFO payment-service Payment Success
 2026-06-15 21:32:32.998266 INFO payment-service Payment Success
+2026-06-15 21:32:33.999831 INFO inventory-service Inventory Updated
+2026-06-15 21:32:35.019647 INFO order-service Order Created
+2026-06-15 21:32:36.075075 INFO order-service Order Created
+2026-06-15 21:32:37.242911 INFO inventory-service Inventory Updated
+2026-06-15 21:32:38.318830 INFO order-service Order Created

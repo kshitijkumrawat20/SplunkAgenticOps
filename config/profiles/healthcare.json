@@ -1,0 +1,7 @@
+{
+  "environment_type": "healthcare",
+  "services": ["patient-portal", "ehr-service", "prescription-router", "hl7-validator"],
+  "critical_components": ["ehr-database", "fhir-server", "hl7-engine"],
+  "error_categories": ["data_sync", "hl7_error", "unauthorized_access"],
+  "business_entities": ["patients", "records", "prescriptions"]
+}

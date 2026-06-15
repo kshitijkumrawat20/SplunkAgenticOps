@@ -1,0 +1,7 @@
+{
+  "environment_type": "banking",
+  "services": ["ledger-service", "transfer-api", "fraud-detection", "accounts-db"],
+  "critical_components": ["core-database", "audit-logs", "hsm-module"],
+  "error_categories": ["transaction_failure", "audit_lockout", "latency"],
+  "business_entities": ["accounts", "transfers", "ledger_entries"]
+}

@@ -1,0 +1,7 @@
+{
+  "environment_type": "saas",
+  "services": ["billing-manager", "tenant-router", "subscription-api", "workspace-service"],
+  "critical_components": ["multi-tenant-db", "stripe-gateway", "identity-provider"],
+  "error_categories": ["billing_sync", "tenant_routing", "rate_limit"],
+  "business_entities": ["tenants", "subscriptions", "users"]
+}

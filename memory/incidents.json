@@ -1,0 +1,149 @@
+[
+  {
+    "incident_id": "test-incident-20260615-084047",
+    "root_cause": "The database is experiencing severe performance degradation, connection pool exhaustion, or locking issues, resulting in persistent Database Timeout errors.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Analyze database slow query logs or performance insights to identify the specific queries causing the timeouts.",
+      "Verify if indexes are applied on frequently searched fields (e.g., run 'EXPLAIN' on queries filtering by 'order_id' or 'user_id').",
+      "Apply missing indexes concurrently to avoid locking tables (e.g., 'CREATE INDEX CONCURRENTLY idx_user_id ON users(user_id);').",
+      "Check connection pool utilization metrics and increase the maximum connection limit if pool exhaustion is confirmed.",
+      "Scale up database read replicas to offload read-heavy traffic from the primary database instance.",
+      "Monitor database CPU, memory, active connections, and query latency to ensure system stability."
+    ],
+    "success": true,
+    "timestamp": "2026-06-15T08:42:00.625548Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-091733",
+    "root_cause": "The database is experiencing resource exhaustion or a performance bottleneck, likely triggered by unoptimized or unindexed slow queries, or a sudden spike in transaction volume, resulting in cascading database timeouts.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Identify slow-running queries by analyzing the database slow query logs or running 'SHOW FULL PROCESSLIST;' to pinpoint resource-intensive operations.",
+      "Run 'EXPLAIN' on the identified slow queries to verify if indexes are properly applied on frequently searched fields such as 'order_id' and 'user_id'.",
+      "Create missing indexes on the identified fields using a safe migration or DDL command (e.g., 'CREATE INDEX CONCURRENTLY' in PostgreSQL).",
+      "Monitor database CPU, memory, and active connection metrics to ensure resource utilization stabilizes.",
+      "If write volume remains extremely high and resource exhaustion continues, scale the database read replicas to offload read-heavy traffic."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our core services experienced disruptions due to an issue with our Database service, potentially impacting customer transactions. Investigations indicate the database was overwhelmed, likely by inefficient operations or a sudden increase in activity, leading to system slowdowns. To resolve this, we recommend increasing the capacity of our database by adding more processing units. The engineering team has 85% confidence that this action will alleviate the current issues.",
+    "timestamp": "2026-06-15T09:18:43.839281Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-091919",
+    "root_cause": "The Database Service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in transaction volume, resulting in a cascade of Database Timeout errors.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Analyze the database slow query log to identify the specific queries causing the timeouts.",
+      "Verify and apply indexes on frequently searched query fields, specifically 'order_id' and 'user_id'.",
+      "Monitor database resource utilization (CPU, memory, and active connections) to confirm performance recovery.",
+      "If high transaction volume persists, scale the database read replica to offload read-heavy queries."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our core Database Service is currently experiencing significant performance degradation, potentially impacting customer operations. The root cause is identified as severe resource exhaustion within the database, likely triggered by unoptimized queries or a sudden surge in activity. This is leading to widespread database timeout errors. We recommend immediately scaling our database read replicas to alleviate the load and restore performance. The engineering team has 90% confidence this action will resolve the incident.",
+    "timestamp": "2026-06-15T09:20:40.927521Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-092108",
+    "root_cause": "The database service is experiencing a severe performance bottleneck, likely caused by unoptimized queries, missing indexes, or a sudden surge in write volume, resulting in database timeouts.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Analyze the database slow query logs to identify the specific queries causing the timeouts.",
+      "Verify if proper indexing is applied on frequently searched query fields, specifically 'order_id' and 'user_id'.",
+      "Apply missing indexes to optimize query execution plans and reduce database load.",
+      "Monitor database write volume and system resource utilization (CPU, Memory, I/O).",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic and alleviate pressure on the primary database."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our systems are currently experiencing an incident impacting an unknown service, leading to disruptions in user experience. The root cause has been identified as a severe performance bottleneck within our database system, causing critical timeouts. We recommend scaling our database capacity to alleviate this issue. The engineering team has 85% confidence that this action will resolve the problem. This approach aligns with past successful remediations for similar incidents.",
+    "timestamp": "2026-06-15T09:22:16.252338Z"
+  },
+  {
+    "incident_id": "manual-incident-1781515702323",
+    "root_cause": "The database is experiencing resource exhaustion or lock contention, likely triggered by unindexed slow queries or a sudden spike in transaction volume, resulting in cascading Database Timeout errors.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Identify slow-running queries by analyzing the database slow query logs (e.g., using EXPLAIN ANALYZE or cloud monitoring tools).",
+      "Verify and apply missing indexes on frequently queried fields such as order_id and user_id using CREATE INDEX CONCURRENTLY to avoid locking tables.",
+      "Check current database connection pool usage and active locks to identify and terminate blocked or long-running transactions.",
+      "If write volume remains high and resource exhaustion persists, scale up the database read replicas to offload read traffic."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "An incident is currently impacting an unknown service, causing significant database timeout errors that likely affect user transactions and system performance. Our analysis indicates the root cause is database resource exhaustion or contention, possibly due to inefficient queries or a sudden increase in activity. We have 90% confidence in this assessment, supported by a spike of 20 database timeout errors within a minute. To resolve this, we recommend scaling our database capacity by adding more read replicas. This approach has a 100% success rate in resolving similar past incidents.",
+    "timestamp": "2026-06-15T09:30:10.683550Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-122534",
+    "root_cause": "The database service is experiencing a severe performance bottleneck, likely caused by unoptimized queries, missing indexes, or a sudden surge in write volume, resulting in database timeouts.",
+    "affected_service": "Unknown",
+    "remediation": [
+      "Analyze the database slow query logs to identify the specific queries causing the timeouts.",
+      "Verify if proper indexing is applied on frequently searched query fields, specifically 'order_id' and 'user_id'.",
+      "Apply missing indexes to optimize query execution plans and reduce database load.",
+      "Monitor database write volume and system resource utilization (CPU, Memory, I/O).",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic and alleviate pressure on the primary database."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "We are currently addressing a performance issue impacting our services, though the specific user-facing service affected remains unknown at this time. Our analysis indicates the core database service is experiencing a severe performance bottleneck, likely due to inefficient queries or a high volume of data operations. We have 85% confidence in this assessment. To address this, we recommend scaling up our database capacity to better handle the current load. This action is expected to alleviate the performance issues and restore normal operations.",
+    "timestamp": "2026-06-15T12:27:30.664562Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-134930",
+    "root_cause": "The database service is experiencing a severe performance bottleneck, likely caused by unoptimized queries, missing indexes, or a sudden surge in write volume, resulting in database timeouts.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "remediation": [
+      "Analyze the database slow query logs to identify the specific queries causing the timeouts.",
+      "Verify if proper indexing is applied on frequently searched query fields, specifically 'order_id' and 'user_id'.",
+      "Apply missing indexes to optimize query execution plans and reduce database load.",
+      "Monitor database write volume and system resource utilization (CPU, Memory, I/O).",
+      "If write volume is extremely high, scale the database read replicas to offload read traffic and alleviate pressure on the primary database."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Our core ecommerce platform is experiencing disruptions, potentially preventing customers from browsing products, placing orders, or completing transactions due to underlying system performance issues. The primary cause has been identified as a severe performance bottleneck within our core database system, likely due to inefficient operations or a sudden surge in activity. We have 85% confidence in this assessment. To alleviate immediate pressure and restore stability, we recommend scaling up our database read capacity. This action aims to temporarily distribute the workload while our teams investigate and optimize the database for long-term performance.",
+    "timestamp": "2026-06-15T13:51:32.098643Z"
+  },
+  {
+    "incident_id": "test-incident-20260615-135339",
+    "root_cause": "The database service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in transaction volume, resulting in cascading database timeouts.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "remediation": [
+      "Identify slow-running queries by analyzing the database slow query logs or running diagnostic queries such as SHOW PROCESSLIST or pg_stat_activity.",
+      "Verify indexing on frequently searched fields such as order_id and user_id by running EXPLAIN plans on the identified slow queries.",
+      "Apply missing indexes concurrently to minimize table locking, for example: CREATE INDEX CONCURRENTLY idx_orders_user_id ON orders(user_id);",
+      "Monitor database CPU utilization, active connections, and query latency to ensure performance stabilizes.",
+      "If resource exhaustion persists due to high read volume, scale the database read replicas to offload read traffic from the primary database instance."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Customers are currently experiencing difficulties completing transactions and placing orders due to severe performance degradation in our core database service. This issue is likely triggered by inefficient data queries or a sudden surge in customer activity, causing system timeouts. To alleviate the load and restore service, we recommend immediately increasing the capacity of our database by scaling read replicas. The engineering team has 92% confidence that this action will resolve the problem.",
+    "timestamp": "2026-06-15T13:55:54.626560Z"
+  },
+  {
+    "incident_id": "manual-incident-1781535700151",
+    "root_cause": "The database is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in transaction volume, resulting in persistent database timeouts.",
+    "affected_service": "Unknown",
+    "incident_type": "database",
+    "industry": "ecommerce",
+    "remediation": [
+      "Access the database administrative console and retrieve the slow query logs to identify the specific queries causing the timeouts.",
+      "Run EXPLAIN plans on the identified slow queries to verify if indexes are being properly utilized on frequently searched fields like order_id and user_id.",
+      "Create missing indexes concurrently (e.g., CREATE INDEX CONCURRENTLY idx_orders_user_id ON orders(user_id);) to minimize locking and restore query performance.",
+      "Monitor database CPU utilization, active connections, and query response times to ensure the timeouts have subsided.",
+      "If transaction volume remains high and resource exhaustion persists, scale the database read replicas to offload read-heavy traffic from the primary database."
+    ],
+    "success": true,
+    "approved": true,
+    "executive_summary": "Customers are likely experiencing difficulties completing orders and transactions due to an issue with a core service. Our core database is experiencing significant performance degradation, likely caused by a sudden surge in activity or inefficient data processing. We have 92% confidence in this assessment. To address this, we recommend increasing the capacity of our database system by adding more read replicas to distribute the load and alleviate pressure.",
+    "timestamp": "2026-06-15T15:06:15.115249Z"
+  }
+]

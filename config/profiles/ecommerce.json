@@ -1,0 +1,7 @@
+{
+  "environment_type": "ecommerce",
+  "services": ["order-service", "payment-service", "cart-service", "auth-service", "inventory-service"],
+  "critical_components": ["database", "redis", "payment-gateway"],
+  "error_categories": ["database", "cache", "payment"],
+  "business_entities": ["customers", "orders", "transactions"]
+}

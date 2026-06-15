@@ -31,3 +31,38 @@ class RCAFinding(BaseModel):
 class ResponseFinding(BaseModel):
     remediation_steps: List[str] = Field(description="Actionable, step-by-step remediation commands/instructions")
     executive_summary: str = Field(description="A high-level business-focused summary of the incident and recovery plan")
+
+class RemediationProposal(BaseModel):
+    recommended_action: str = Field(description="Proposed action: rollback_deployment, restart_service, scale_replicas, clear_cache, no_action")
+    target_service: str = Field(description="Target service name (e.g., order-service)")
+    target_version: Optional[str] = Field(None, description="Version to deploy (for rollback_deployment)")
+    risk_level: str = Field(description="Risk level: low, medium, high")
+    reasoning: str = Field(description="Reasoning for the proposal")
+    requires_approval: bool = Field(default=True, description="True if action requires operator approval")
+
+class TimelineEvent(BaseModel):
+    timestamp: str
+    event_type: str
+    description: str
+
+class IncidentTimeline(BaseModel):
+    events: List[TimelineEvent]
+
+class HistoricalContext(BaseModel):
+    similar_incidents_found: int = Field(description="Number of similar incidents found in history")
+    recommended_fix: str = Field(description="Historical recommended fix description")
+    historical_success_rate: float = Field(description="Success rate of the recommended fix (0.0 to 1.0)")
+
+class AnomalyFinding(BaseModel):
+    anomaly_detected: bool
+    anomaly_type: str
+    confidence: float
+    affected_service: str
+    description: str
+
+class ClassificationFinding(BaseModel):
+    incident_type: str = Field(description="Incident type: database, cache, networking, deployment, infrastructure, application, security, unknown")
+    severity: str = Field(description="Incident severity level")
+    affected_domain: str = Field(description="Affected domain or component")
+    confidence: float = Field(description="Confidence score in the classification (0.0 to 1.0)")
+

@@ -1,0 +1,7 @@
+{
+  "environment_type": "kubernetes",
+  "services": ["api-gateway", "user-service", "ingress-controller"],
+  "critical_components": ["cluster", "nodes", "pods"],
+  "error_categories": ["latency", "resource_exhaustion", "network"],
+  "business_entities": ["namespaces", "deployments", "ingress_rules"]
+}

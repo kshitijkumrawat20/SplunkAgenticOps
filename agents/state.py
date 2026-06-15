@@ -5,7 +5,12 @@ from .models import (
     DeploymentAgentFinding,
     RunbookAgentFinding,
     RCAFinding,
-    ResponseFinding
+    ResponseFinding,
+    RemediationProposal,
+    HistoricalContext,
+    TimelineEvent,
+    AnomalyFinding,
+    ClassificationFinding
 )
 
 class IncidentState(TypedDict):
@@ -26,6 +31,19 @@ class IncidentState(TypedDict):
     runbook_findings: Optional[RunbookAgentFinding]
     rca_findings: Optional[RCAFinding]
     response_findings: Optional[ResponseFinding]
+    classification_findings: Optional[ClassificationFinding]
     
     # Execution workflow tracking
     supervisor_next: Optional[str]
+
+    # New fields for Remediation & Approval
+    incident_id: Optional[str]
+    remediation_proposal: Optional[RemediationProposal]
+    approval_status: Optional[dict]
+
+    # Phase 2 Timeline & Memory
+    timeline: Optional[list]
+    historical_context: Optional[dict]
+
+    # Phase 3 Anomaly detection
+    anomaly_findings: Optional[AnomalyFinding]

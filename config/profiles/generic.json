@@ -1,0 +1,7 @@
+{
+  "environment_type": "generic",
+  "services": ["api-service", "worker-node", "data-store"],
+  "critical_components": ["database", "message-broker", "cache-layer"],
+  "error_categories": ["connection_failure", "timeout", "resource_limit"],
+  "business_entities": ["requests", "jobs", "data_records"]
+}

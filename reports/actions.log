@@ -1,0 +1,22 @@
+[APPROVED]
+no_action order-service
+[APPROVED]
+no_action database-tier
+[APPROVED]
+scale_replicas Database service
+[APPROVED]
+scale_replicas Database Service
+[APPROVED]
+scale_replicas Database Service
+[APPROVED]
+scale_replicas database
+[APPROVED]
+scale_replicas Database Service
+[APPROVED]
+scale_replicas database-service
+[APPROVED]
+scale_replicas unknown
+[APPROVED]
+scale_replicas unknown
+[APPROVED]
+scale_replicas unknown

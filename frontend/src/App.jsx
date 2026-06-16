@@ -6,36 +6,59 @@ import {
 const API_BASE_URL = "http://localhost:8020";
 const WS_BASE_URL = "ws://localhost:8020";
 
-const getDynamicAgentOrder = (liveAgentProgress, incidentDetails) => {
+const getDynamicAgentOrder = (liveAgentProgress, incidentDetails, activeProfile = "ecommerce") => {
   const plan = liveAgentProgress?.planner_agent?.data || incidentDetails?.findings?.investigation_plan || incidentDetails?.investigation_plan;
-  if (plan && plan.required_agents) {
-    const order = [
-      { id: "planner_agent", label: "Planner Agent" }
+  
+  // If we are completely idle (no live progress and no incident details selected)
+  if (Object.keys(liveAgentProgress).length === 0 && !incidentDetails) {
+    return [
+      { id: "planner_agent", label: "Planner Agent" },
+      { id: "dynamic_specialists", label: "Specialists Pool", isPlaceholder: true, placeholderText: "Awaiting alert" },
+      { id: "rca_remediation", label: "RCA & Actions", isPlaceholder: true, placeholderText: "Awaiting findings" }
     ];
+  }
+
+  // If we are running, or viewing details
+  const order = [
+    { id: "planner_agent", label: "Planner Agent" }
+  ];
+
+  if (plan && plan.required_agents) {
+    // Add specialists that are in the plan
     plan.required_agents.forEach(agentId => {
       let label = agentId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
       order.push({ id: agentId, label: label });
     });
-    order.push({ id: "rca_agent", label: "RCA Agent" });
-    order.push({ id: "remediation_agent", label: "Remediation Agent" });
-    order.push({ id: "approval_node", label: "Approval Node" });
-    order.push({ id: "response_agent", label: "Response Agent" });
-    return order;
+
+    // Check if specialists are completed or skipped
+    const specialistsDone = plan.required_agents.every(agentId => {
+      const status = liveAgentProgress[agentId]?.status;
+      return status === "completed" || status === "skipped";
+    });
+
+    // Dynamically show the post-planning agents as they are spawned or when specialists are done
+    const hasRcaStarted = !!liveAgentProgress?.rca_agent || !!incidentDetails;
+    if (hasRcaStarted || specialistsDone) {
+      order.push({ id: "rca_agent", label: "RCA Agent" });
+    }
+
+    const hasRemediationStarted = !!liveAgentProgress?.remediation_agent || !!incidentDetails;
+    if (hasRemediationStarted || (liveAgentProgress?.rca_agent?.status === "completed")) {
+      order.push({ id: "remediation_agent", label: "Remediation Agent" });
+    }
+
+    const hasApprovalStarted = !!liveAgentProgress?.approval_node || !!incidentDetails;
+    if (hasApprovalStarted || (liveAgentProgress?.remediation_agent?.status === "completed")) {
+      order.push({ id: "approval_node", label: "Approval Node" });
+    }
+
+    const hasResponseStarted = !!liveAgentProgress?.response_agent || !!incidentDetails;
+    if (hasResponseStarted || (liveAgentProgress?.approval_node?.status === "completed")) {
+      order.push({ id: "response_agent", label: "Response Agent" });
+    }
   }
-  
-  // Fallback if no plan is available
-  return [
-    { id: "planner_agent", label: "Planner Agent" },
-    { id: "log_agent", label: "Log Agent" },
-    { id: "metrics_agent", label: "Metrics Agent" },
-    { id: "anomaly_agent", label: "Anomaly Agent" },
-    { id: "deployment_agent", label: "Deployment Agent" },
-    { id: "runbook_agent", label: "Runbook Agent" },
-    { id: "rca_agent", label: "RCA Agent" },
-    { id: "remediation_agent", label: "Remediation Agent" },
-    { id: "approval_node", label: "Approval Node" },
-    { id: "response_agent", label: "Response Agent" }
-  ];
+
+  return order;
 };
 
 function App() {
@@ -446,25 +469,66 @@ function App() {
           
           {/* Panel 2: Live Agent Investigation timeline */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
-            <h2 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-indigo-400" />
-              Live Agent Execution Steps
+            <h2 className="font-bold text-slate-200 mb-4 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-400" />
+                Live Agent Execution Steps
+              </span>
+              {Object.keys(liveAgentProgress).length === 0 && !incidentDetails && (
+                <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full font-bold">
+                  PIPELINE PREVIEW ({activeProfile.toUpperCase()})
+                </span>
+              )}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
-              {getDynamicAgentOrder(liveAgentProgress, incidentDetails).map((agent) => {
+              {getDynamicAgentOrder(liveAgentProgress, incidentDetails, activeProfile).map((agent) => {
+                if (agent.isPlaceholder) {
+                  return (
+                    <div 
+                      key={agent.id}
+                      className="relative p-3.5 rounded-xl border border-dashed border-slate-800/80 bg-slate-950/15 opacity-40 flex flex-col items-center justify-center text-center transition-all duration-300 hover:opacity-60"
+                    >
+                      <span className="absolute top-1 right-1 text-[7px] font-bold px-1 py-0.2 bg-slate-800/80 border border-slate-700/50 text-slate-500 rounded-sm scale-90">
+                        DYNAMIC
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-slate-900/35 text-slate-600 flex items-center justify-center mb-1.5 border border-slate-800/40">
+                        <Layers className="w-4 h-4 text-slate-500 animate-pulse" />
+                      </div>
+                      <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">{agent.label}</span>
+                      <span className="text-[8px] font-semibold mt-1 uppercase text-slate-600">
+                        {agent.placeholderText}
+                      </span>
+                    </div>
+                  );
+                }
+
                 const agentData = liveAgentProgress[agent.id];
                 const status = typeof agentData === "object" ? agentData.status : (agentData || "pending");
+                const isIdle = Object.keys(liveAgentProgress).length === 0 && !incidentDetails;
+                
                 return (
                   <div 
                     key={agent.id}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition ${status === "running" ? "bg-indigo-500/10 border-indigo-400 shadow-md shadow-indigo-500/10 scale-102" : status === "completed" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-slate-950/60 border-slate-900/80"}`}
+                    className={`relative p-3 rounded-xl border flex flex-col items-center justify-center text-center transition ${isIdle ? "bg-slate-950/20 border-dashed border-slate-800/80 opacity-55 hover:opacity-85" : status === "running" ? "bg-indigo-500/10 border-indigo-400 shadow-md shadow-indigo-500/10 scale-102" : status === "completed" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-slate-950/60 border-slate-900/80"}`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${status === "running" ? "bg-indigo-500/20 text-indigo-300 animate-spin" : status === "completed" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-900 text-slate-500"}`}>
+                    {/* Dispatched Badge */}
+                    {!isIdle && agent.id !== "planner_agent" && agent.id !== "rca_agent" && agent.id !== "remediation_agent" && agent.id !== "approval_node" && agent.id !== "response_agent" && (
+                      <span className="absolute top-1 right-1 text-[7px] font-bold px-1 py-0.2 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded-sm scale-90">
+                        DISPATCHED
+                      </span>
+                    )}
+                    {isIdle && (
+                      <span className="absolute top-1 right-1 text-[7px] font-bold px-1 py-0.2 bg-slate-800 border border-slate-700 text-slate-500 rounded-sm scale-90">
+                        PREVIEW
+                      </span>
+                    )}
+
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${isIdle ? "bg-slate-900/50 text-slate-600" : status === "running" ? "bg-indigo-500/20 text-indigo-300 animate-spin" : status === "completed" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-900 text-slate-500"}`}>
                       {status === "completed" ? <CheckCircle2 className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
                     </div>
                     <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{agent.label}</span>
-                    <span className={`text-[9px] font-semibold mt-1 uppercase ${status === "running" ? "text-indigo-400" : status === "completed" ? "text-emerald-400" : "text-slate-600"}`}>
-                      {status}
+                    <span className={`text-[9px] font-semibold mt-1 uppercase ${isIdle ? "text-slate-600" : status === "running" ? "text-indigo-400 animate-pulse" : status === "completed" ? "text-emerald-400" : "text-slate-600"}`}>
+                      {isIdle ? "ready" : status}
                     </span>
                   </div>
                 );
@@ -473,7 +537,7 @@ function App() {
 
             {/* Active Agent Thought Stream */}
             {(() => {
-              const currentOrder = getDynamicAgentOrder(liveAgentProgress, incidentDetails);
+              const currentOrder = getDynamicAgentOrder(liveAgentProgress, incidentDetails, activeProfile);
               const runningAgent = currentOrder.find(a => liveAgentProgress[a.id]?.status === "running");
               const lastAgent = runningAgent || [...currentOrder].reverse().find(a => liveAgentProgress[a.id]?.status === "completed");
               
@@ -517,50 +581,63 @@ function App() {
             })()}
 
             {/* Live Telemetry Console Feed */}
-            <div className="mt-5 p-4 bg-slate-950/80 border border-slate-800/80 rounded-xl font-mono text-xs h-64 overflow-y-auto space-y-2.5 scrollbar-thin">
-              <div className="text-slate-500 border-b border-slate-800/60 pb-2 flex justify-between items-center sticky top-0 bg-slate-950/90 backdrop-blur-sm z-10">
-                <span className="flex items-center gap-1.5 font-semibold text-[10px] uppercase tracking-wider text-indigo-400">
-                  <Activity className="w-3.5 h-3.5 animate-pulse text-indigo-400" />
+            {/* Live Telemetry Console Feed */}
+            <div className="mt-5 p-4 bg-slate-950/90 border border-slate-800/80 rounded-xl font-mono text-xs h-72 overflow-y-auto space-y-3.5 scrollbar-thin shadow-2xl shadow-indigo-950/20">
+              <div className="text-slate-500 border-b border-slate-800/60 pb-2.5 flex justify-between items-center sticky top-0 bg-slate-950/95 backdrop-blur-sm z-10">
+                <span className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest text-indigo-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  </span>
                   Real-time Multi-Agent Observability & Telemetry Stream
                 </span>
-                <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-bold">MCP TOOL LOGS ACTIVE</span>
+                <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-bold animate-pulse">MCP TOOL LOGS ACTIVE</span>
               </div>
               
               {Object.keys(liveAgentProgress).length === 0 ? (
-                <div className="text-slate-600 italic py-12 text-center">Observability stream idle. Trigger an investigation to stream live telemetry.</div>
+                <div className="text-slate-600 italic py-16 text-center">Observability stream idle. Trigger an investigation to stream live telemetry.</div>
               ) : (
-                <div className="space-y-2.5 pt-2">
-                  {getDynamicAgentOrder(liveAgentProgress, incidentDetails).map(agent => {
+                <div className="relative border-l border-slate-800/80 ml-3 pl-5 space-y-3 pt-2">
+                  {getDynamicAgentOrder(liveAgentProgress, incidentDetails, activeProfile).map(agent => {
                     const data = liveAgentProgress[agent.id];
                     if (!data) return null;
                     const isRunning = data.status === "running";
                     return (
-                      <div key={agent.id} className="flex flex-col gap-1 border-l-2 border-slate-800 pl-3.5 py-1 text-left">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] text-slate-500 font-mono">[{new Date().toLocaleTimeString()}]</span>
-                          <span className="text-indigo-400 font-bold uppercase text-[10px]">{agent.label}</span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${isRunning ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"}`}>
-                            {data.status}
-                          </span>
-                          {data.tools && data.tools.length > 0 && (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
-                              MCP TOOL CALL: {data.tools.join(", ")}
+                      <div key={agent.id} className="relative group transition-all duration-300 hover:bg-slate-900/30 rounded-xl p-3 border border-transparent hover:border-slate-800/40 text-left">
+                        {/* Timeline connector dot */}
+                        <div className="absolute left-[-26px] top-[20px] w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-800 group-hover:border-indigo-500/80 transition-colors z-10 flex items-center justify-center">
+                          <div className={`w-1 h-1 rounded-full ${isRunning ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`}></div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] text-slate-500 font-mono">[{new Date().toLocaleTimeString()}]</span>
+                            <span className="text-indigo-400 font-bold uppercase text-[10px] tracking-wide">{agent.label}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase border ${isRunning ? "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
+                              {data.status}
                             </span>
+                            {data.tools && data.tools.length > 0 && (
+                              <span className="text-[8px] font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
+                                MCP TOOL CALL: {data.tools.join(", ")}
+                              </span>
+                            )}
+                          </div>
+                          {data.message && (
+                            <div className="text-slate-300 text-xs pl-0.5 leading-relaxed bg-slate-900/50 p-2 border border-slate-800/30 rounded-md font-sans">
+                              {data.message}
+                            </div>
+                          )}
+                          {data.data && (
+                            <details className="mt-0.5">
+                              <summary className="text-[10px] text-indigo-400/70 hover:text-indigo-400 cursor-pointer select-none font-semibold flex items-center gap-1">
+                                <Layers className="w-3.5 h-3.5" />
+                                Inspect Telemetry Data
+                              </summary>
+                              <pre className="mt-1.5 p-2.5 bg-slate-900 border border-slate-800/60 rounded-lg text-[10px] text-slate-400 overflow-x-auto max-h-36 scrollbar-thin leading-relaxed">
+                                {JSON.stringify(data.data, null, 2)}
+                              </pre>
+                            </details>
                           )}
                         </div>
-                        {data.message && (
-                          <div className="text-slate-300 text-xs pl-2 font-medium leading-relaxed">
-                            {data.message}
-                          </div>
-                        )}
-                        {data.data && (
-                          <details className="mt-1 pl-2">
-                            <summary className="text-[10px] text-indigo-400/70 hover:text-indigo-400 cursor-pointer select-none">Show Raw Findings JSON</summary>
-                            <pre className="mt-1 p-2 bg-slate-900 border border-slate-800/60 rounded text-[10px] text-slate-400 overflow-x-auto max-h-32">
-                              {JSON.stringify(data.data, null, 2)}
-                            </pre>
-                          </details>
-                        )}
                       </div>
                     );
                   })}

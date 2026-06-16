@@ -516,7 +516,15 @@ async def response_agent_node(state: IncidentState) -> Dict[str, Any]:
         "success": approved,
         "approved": approved,
         "executive_summary": briefing,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "root_cause_analysis": {
+            "hypothesis": briefing,
+            "rca_hypothesis": rca.root_cause_hypothesis if rca else "Unknown",
+            "confidence_score": rca.confidence_score if rca else 0.0,
+            "evidence": rca.evidence if rca else "No evidence collected"
+        },
+        "timeline": timeline,
+        "historical_context": state.get("historical_context") or {}
     })
     
     def get_val(obj, key, default=None):

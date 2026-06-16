@@ -11,19 +11,19 @@
       "description": "Database Outage Alert triggered."
     },
     {
-      "timestamp": "2026-06-15T15:59:56.797613Z",
+      "timestamp": "2026-06-15T17:57:06.420598Z",
       "event_type": "rca",
-      "description": "Root cause identified: The Database Service is experiencing severe performance degradation or resource exhaustion, likely triggered by unindexed slow queries or a sudden surge in write volume, resulting in a cascade of Database Timeout errors."
+      "description": "Root cause identified: The database is experiencing a severe performance bottleneck or resource exhaustion, likely triggered by unoptimized queries or missing indexes under high load, resulting in widespread Database Timeout errors."
     },
     {
-      "timestamp": "2026-06-15T16:00:10.228672Z",
+      "timestamp": "2026-06-15T17:57:30.304197Z",
       "event_type": "remediation_proposal",
-      "description": "Remediation proposed: scale_replicas on unknown"
+      "description": "Remediation proposed: scale_replicas on order-service"
     },
     {
-      "timestamp": "2026-06-15T16:00:25.373858Z",
+      "timestamp": "2026-06-15T17:58:09.671981Z",
       "event_type": "approval",
-      "description": "Operator decision: Approved for scale_replicas on unknown"
+      "description": "Operator decision: Approved for scale_replicas on order-service"
     }
   ]
 }

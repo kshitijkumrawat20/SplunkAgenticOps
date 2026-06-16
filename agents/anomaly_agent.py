@@ -37,7 +37,9 @@ def calculate_z_score_deviation(log_lines: List[str]) -> Dict[str, Any]:
             "z_score": 0.0,
             "spike_detected": False,
             "rolling_average": len(log_lines),
-            "deviation_percentage": 0.0
+            "deviation_percentage": 0.0,
+            "latest_interval_count": len(log_lines),
+            "total_errors": len(log_lines)
         }
         
     timestamps.sort()
@@ -50,7 +52,9 @@ def calculate_z_score_deviation(log_lines: List[str]) -> Dict[str, Any]:
             "z_score": 3.0, # All errors occurred at the same second -> absolute spike
             "spike_detected": True,
             "rolling_average": len(log_lines),
-            "deviation_percentage": 100.0
+            "deviation_percentage": 100.0,
+            "latest_interval_count": len(log_lines),
+            "total_errors": len(log_lines)
         }
         
     # Split duration into 10 intervals and count frequency in each

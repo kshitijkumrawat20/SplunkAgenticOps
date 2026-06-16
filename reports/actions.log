@@ -32,3 +32,11 @@ scale_replicas unknown
 scale_replicas order-service
 [APPROVED]
 scale_replicas order-service
+[APPROVED]
+no_action unknown
+[APPROVED]
+restart_service order-service
+[APPROVED]
+no_action unknown
+[APPROVED]
+restart_service order-service

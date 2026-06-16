@@ -9,7 +9,7 @@ const WS_BASE_URL = "ws://localhost:8020";
 const getDynamicAgentOrder = (liveAgentProgress, incidentDetails, activeProfile = "ecommerce") => {
   const plan = liveAgentProgress?.planner_agent?.data || incidentDetails?.findings?.investigation_plan || incidentDetails?.investigation_plan;
   
-  // If we are completely idle (no live progress and no incident details selected)
+  // 1. If we are completely idle (no live progress and no incident details selected)
   if (Object.keys(liveAgentProgress).length === 0 && !incidentDetails) {
     return [
       { id: "planner_agent", label: "Planner Agent" },
@@ -18,25 +18,21 @@ const getDynamicAgentOrder = (liveAgentProgress, incidentDetails, activeProfile 
     ];
   }
 
-  // If we are running, or viewing details
-  const order = [
-    { id: "planner_agent", label: "Planner Agent" }
-  ];
-
+  // 2. If a plan exists (either in live progress or in selected incident details)
   if (plan && plan.required_agents) {
-    // Add specialists that are in the plan
+    const order = [
+      { id: "planner_agent", label: "Planner Agent" }
+    ];
     plan.required_agents.forEach(agentId => {
       let label = agentId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
       order.push({ id: agentId, label: label });
     });
 
-    // Check if specialists are completed or skipped
     const specialistsDone = plan.required_agents.every(agentId => {
       const status = liveAgentProgress[agentId]?.status;
       return status === "completed" || status === "skipped";
     });
 
-    // Dynamically show the post-planning agents as they are spawned or when specialists are done
     const hasRcaStarted = !!liveAgentProgress?.rca_agent || !!incidentDetails;
     if (hasRcaStarted || specialistsDone) {
       order.push({ id: "rca_agent", label: "RCA Agent" });
@@ -56,9 +52,30 @@ const getDynamicAgentOrder = (liveAgentProgress, incidentDetails, activeProfile 
     if (hasResponseStarted || (liveAgentProgress?.approval_node?.status === "completed")) {
       order.push({ id: "response_agent", label: "Response Agent" });
     }
+    return order;
   }
 
-  return order;
+  // 3. If no plan exists, but we are viewing an old/completed incident (migration/compatibility fallback)
+  if (incidentDetails) {
+    let specialists = ["log_agent", "metrics_agent", "anomaly_agent", "deployment_agent", "database_agent", "runbook_agent"];
+    const order = [{ id: "planner_agent", label: "Planner Agent" }];
+    specialists.forEach(agentId => {
+      let label = agentId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      order.push({ id: agentId, label: label });
+    });
+    order.push({ id: "rca_agent", label: "RCA Agent" });
+    order.push({ id: "remediation_agent", label: "Remediation Agent" });
+    order.push({ id: "approval_node", label: "Approval Node" });
+    order.push({ id: "response_agent", label: "Response Agent" });
+    return order;
+  }
+
+  // 4. If we are currently running the planner agent (no plan yet generated)
+  return [
+    { id: "planner_agent", label: "Planner Agent" },
+    { id: "dynamic_specialists", label: "Specialists Pool", isPlaceholder: true, placeholderText: "Planning..." },
+    { id: "rca_remediation", label: "RCA & Actions", isPlaceholder: true, placeholderText: "Awaiting findings" }
+  ];
 };
 
 function App() {
@@ -79,6 +96,8 @@ function App() {
   const [isInvestigating, setIsInvestigating] = useState(false);
   
   const wsRef = useRef(null);
+  const pendingUpdatesRef = useRef({});
+  const throttleTimeoutRef = useRef(null);
 
   // Fetch incidents list
   const fetchIncidents = async () => {
@@ -146,7 +165,15 @@ function App() {
       fetchIncidents();
       fetchSummaryStats();
     }, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Fetch specific incident details
@@ -186,15 +213,26 @@ function App() {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        setLiveAgentProgress(prev => ({
-          ...prev,
-          [message.agent]: {
-            status: message.status,
-            message: message.message,
-            tools: message.tools,
-            data: message.data
-          }
-        }));
+        
+        pendingUpdatesRef.current[message.agent] = {
+          status: message.status,
+          message: message.message,
+          tools: message.tools,
+          data: message.data
+        };
+
+        if (!throttleTimeoutRef.current) {
+          throttleTimeoutRef.current = setTimeout(() => {
+            const updates = { ...pendingUpdatesRef.current };
+            pendingUpdatesRef.current = {};
+            throttleTimeoutRef.current = null;
+            
+            setLiveAgentProgress(prev => ({
+              ...prev,
+              ...updates
+            }));
+          }, 50);
+        }
       } catch (err) {
         console.error("Error parsing WS event:", err);
       }
@@ -202,11 +240,19 @@ function App() {
 
     ws.onclose = () => {
       setWebsocketStatus("disconnected");
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+        throttleTimeoutRef.current = null;
+      }
     };
 
     ws.onerror = (err) => {
       console.error("WebSocket error:", err);
       setWebsocketStatus("error");
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+        throttleTimeoutRef.current = null;
+      }
     };
   };
 
@@ -219,6 +265,12 @@ function App() {
   const handleStartInvestigation = async (e) => {
     e.preventDefault();
     setIsInvestigating(true);
+    
+    if (throttleTimeoutRef.current) {
+      clearTimeout(throttleTimeoutRef.current);
+      throttleTimeoutRef.current = null;
+    }
+    pendingUpdatesRef.current = {};
     setLiveAgentProgress({});
     
     // Generate unique ID
